@@ -237,15 +237,5 @@ int main()
     }
 
     cout << pressState->reduce()->reduce()->reduce()->unprocessed.size() << endl;
-
-//    auto eventQueue = new Event_Queue();
-//    auto outputEvent = new Output_Event(89);
-//    auto outputEventTwo = new Output_Event(34);
-//    vector<Event *> testEvent;
-//    testEvent.push_back(outputEvent);
-//    testEvent.push_back(outputEventTwo);
-//    eventQueue->insert_all(testEvent);
-//    auto drillPress = new DrillPress();
-//    cout << drillPress->deltaExternal(100,0,0) << endl;
     return 0;
 }
