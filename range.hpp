@@ -31,3 +31,4 @@ public:
             : m_begin(range_begin), m_end(range_end)
     { }
 };
+//all tokens have a get value

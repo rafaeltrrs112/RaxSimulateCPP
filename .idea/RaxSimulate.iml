@@ -6,7 +6,6 @@
       <sourceFolder url="file://$MODULE_DIR$/Model.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Model.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/range.hpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/range.hpp" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
