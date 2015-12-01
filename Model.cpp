@@ -445,7 +445,6 @@ public:
     }
 
     CellState * reduce(){
-        auto newState = new CellState();
         switch (selfValue) {
             case 0 : {
                 if(left == 1 && right == 1){
@@ -471,7 +470,7 @@ public:
                 else if(left == 0 && right == 1){
                     selfValue = 1;
                 } else {
-                    selfValue = 0;
+                    selfValue = 1;
                 }
                 break;
             }
@@ -508,7 +507,7 @@ public :
 
     CellState * deltaInternal(CellState * currentState){
         auto newState = currentState->reduce();
-        return currentState;
+        return newState;
     }
 
     CellOutput * lambda(CellState * currentState, int peekTime){
@@ -548,23 +547,50 @@ void PartThree(){
     delete eq;
 }
 
+class Cell_Event_Queue : public Event_Queue {
+public :
+    int cell_count;
+    int stop_count = 15;
+    Cell_Event_Queue(int _cellCount) : cell_count(_cellCount){}
+    vector<Cell *> allCells;
+    void dump(){
+        while(!eventQueue.empty() && stop_count > 0){
+            //Get the top value
+            auto e = eventQueue.top();
+            e->commit();
+            eventQueue.pop();
+            delete e;
+            //Do a check here to see if this event should be allowed to commit or if a confluent join should occur.
+            if(cell_count == 30){
+                for(auto cell : allCells){
+                    cout << cell->currentState->selfValue;
+                }
+                cout << endl;
+                cell_count = 0;
+                stop_count--;
+                //getchar();
+            }
+        }
+    }
+};
+
 //Instructs a cell to update it's self value
 class Update_Event : public Event {
 public:
     Cell * shouterCell;
-    Event_Queue * context;
-    Update_Event(Cell * shouterCell, int _ms, Event_Queue * context) : Event(_ms), shouterCell(shouterCell) {
+    Cell_Event_Queue * context;
+    Update_Event(Cell * shouterCell, int _ms, Cell_Event_Queue * context) : Event(_ms), shouterCell(shouterCell) {
         this->context = context;
     }
     void commit(){
-        cout << "Updating [" << shouterCell->name << "] at [" << get_milli_seconds() << "]" << endl;
+        //cout << "Updating [" << shouterCell->name << "] at [" << get_milli_seconds() << "]" << endl;
         //Update the cell's state...and output the current output.
+        //cout << "Before update " << shouterCell->currentState->selfValue << " left: " << shouterCell->currentState->left << " right : " << shouterCell->currentState->right << endl;
         shouterCell->currentState = shouterCell->deltaInternal(shouterCell->currentState);
-        if(shouterCell->tailer){
-            cout << shouterCell->lambda(shouterCell->currentState, get_milli_seconds())->value << endl;
-        } else {
-            cout << shouterCell->lambda(shouterCell->currentState, get_milli_seconds())->value;
-        }
+        //cout << "After update " << shouterCell->currentState->selfValue << " left: " << shouterCell->currentState->left << " right : " << shouterCell->currentState->right << endl;
+        //cout << endl;
+        //getchar();
+        context->cell_count++;
     }
 };
 
@@ -573,13 +599,14 @@ class Wake_Event : public Event {
 public:
     Input_Event<Cell, CellInput> * buildFrom;
     Cell * snoozingCell;
-    Event_Queue * context;
-    Wake_Event(Cell * snoozingCell, int _ms, Event_Queue * context) : Event(_ms), buildFrom(buildFrom), snoozingCell(snoozingCell) {
+    Cell_Event_Queue * context;
+
+    Wake_Event(Cell * snoozingCell, int _ms, Cell_Event_Queue * context) : Event(_ms), buildFrom(buildFrom), snoozingCell(snoozingCell) {
         this->context = context;
     }
 
     void commit(){
-        cout << "Waking [" << snoozingCell->name << "] at [" << get_milli_seconds() << "]" << endl;
+        //cout << "Waking [" << snoozingCell->name << "] at [" << get_milli_seconds() << "]" << endl;
 
         int left = snoozingCell->binaryRouter->leftContact->currentState->selfValue;
         int right = snoozingCell->binaryRouter->rightContact->currentState->selfValue;
@@ -589,52 +616,91 @@ public:
 
         context->insert(e);
 
-        int rightWakeTime = snoozingCell->tailer ? get_milli_seconds() + 1 : get_milli_seconds();
-        cout << "[" <<snoozingCell->name << "]"
+        int rightWakeTime = snoozingCell->tailer ? get_milli_seconds() + 15 : get_milli_seconds();
         auto rightWake = new Wake_Event(snoozingCell->binaryRouter->rightContact, rightWakeTime, context);
         context->insert(rightWake);
 
-        auto update_event = new Update_Event(snoozingCell, get_milli_seconds() + 1, context);
+        auto update_event = new Update_Event(snoozingCell, get_milli_seconds() + 10, context);
         context->insert(update_event);
-        getchar();
+        //getchar();
     }
 
 };
 
+
 void PartTwo(){
-    auto eq = new Event_Queue();
+    auto eq = new Cell_Event_Queue(0);
 
-    CellState * defaultState = new CellState(1);
+//    CellState * defaultState = new CellState(0);
+//
+//    Cell * cellOne = new Cell(defaultState, eq);
+//    Cell * cellTwo = new Cell(new CellState(0), eq);
+//    Cell * cellThree = new Cell(new CellState(0), eq);
+//
+//    cellThree->tailer = true;
+//    cellTwo->tailer = false;
+//    cellOne->tailer = false;
+//
+//    auto routeOne = new BinaryRouter<Cell *, Cell *>(cellThree, cellTwo);
+//    auto routeTwo = new BinaryRouter<Cell *, Cell *>(cellOne, cellThree);
+//    auto routeThree = new BinaryRouter<Cell *, Cell *>(cellTwo, cellOne);
+//
+//    cellOne->binaryRouter = routeOne;
+//    cellTwo->binaryRouter = routeTwo;
+//    cellThree->binaryRouter = routeThree;
+//
+//    cellOne->name = "Cell One";
+//    cellTwo->name = "Cell Two";
+//    cellThree->name = "Cell Three";
 
-    Cell * cellOne = new Cell(defaultState, eq);
-    Cell * cellTwo = new Cell(new CellState(0), eq);
-    Cell * cellThree = new Cell(new CellState(0), eq);
+    vector<Cell *> allCells = vector<Cell *>();
 
-    cellThree->tailer = false;
-    cellOne->tailer = true;
-    cellOne->tailer = true;
 
-    auto routeOne = new BinaryRouter<Cell *, Cell *>(cellThree, cellTwo);
-    auto routeTwo = new BinaryRouter<Cell *, Cell *>(cellOne, cellThree);
-    auto routeThree = new BinaryRouter<Cell *, Cell *>(cellTwo, cellOne);
+    for(auto i : range<int>(0, 30)){
+        cout << i << endl;
+        allCells.push_back(new Cell(new CellState(0), eq));
+    }
 
-    cellOne->binaryRouter = routeOne;
-    cellTwo->binaryRouter = routeTwo;
-    cellThree->binaryRouter = routeThree;
+    allCells[17]->currentState->selfValue = 1;
 
-    cellOne->name = "Cell One";
-    cellTwo->name = "Cell Two";
-    cellThree->name = "Cell Three";
+    for(auto i : range<int>(0, 30)){
+        auto currentCell = allCells[i];
+        currentCell->tailer = false;
 
+        if(i != 0 && i != 29) {
+            auto leftCell = allCells[i - 1];
+            auto rightCell = allCells[i + 1];
+            auto router = new BinaryRouter<Cell *, Cell *>(leftCell, rightCell);
+            currentCell->binaryRouter = router;
+        }
+        else if(i == 0){
+            auto leftCell = allCells[29];
+            auto rightCell = allCells[i + 1];
+            auto router = new BinaryRouter<Cell *, Cell *>(leftCell, rightCell);
+            currentCell->binaryRouter = router;
+        } else {
+            auto leftCell = allCells[28];
+            auto rightCell = allCells[0];
+            auto router = new BinaryRouter<Cell *, Cell *>(leftCell, rightCell);
+            currentCell->binaryRouter = router;
+            currentCell->tailer = true;
+        }
+
+        currentCell->currentState->left = currentCell->binaryRouter->leftContact->currentState->selfValue;
+        currentCell->currentState->right = currentCell->binaryRouter->rightContact->currentState->selfValue;
+
+    }
+
+    eq->allCells = allCells;
 
     //Input event is a wake event
-    auto e = new Wake_Event(cellOne, 0, eq);
+    auto e = new Wake_Event(allCells[0], 0, eq);
 
     eq->insert(e);
-
-    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
+//
+//    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
     eq->dump();
-    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
+//    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
 
 }
 int main()

@@ -15,9 +15,9 @@ public:
     ~Event_Queue();
     void insert(Event * e);
     void insert_all(std::vector<Event *> events);
-    void dump();
+    virtual void dump();
     void log(std::__cxx11::string message);
-private:
     std::priority_queue<Event*, std::vector<Event*>, Event_Comparator> eventQueue;
+private:
 };
 #endif //RAXSIMULATE_EVENT_QUEUE_HPP
