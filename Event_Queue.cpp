@@ -29,6 +29,7 @@ void Event_Queue::insert_all(std::vector<Event *> events){
 void Event_Queue::dump(){
     while(!eventQueue.empty()){
         //Get the top value
+        cout << eventQueue.size() << endl;
         auto e = eventQueue.top();
         e->commit();
         eventQueue.pop();

@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <vector>
 #include <typeinfo>
+#include <functional>
 #include "range.hpp"
 #include "Event_Queue.hpp"
 
@@ -16,6 +17,7 @@ const string DISK = "Disk";
 const string WASHER = "Washer";
 enum outputIdentifier {Ball,Disk,Washer};
 enum valueIdentifier {Zero, One};
+enum xorIdentifier {False, True};
 /**
  * TODO : Drill Press Model [1st Priority]
  * TODO : Event Handler [2nd Priority] : Event Spawn
@@ -46,9 +48,9 @@ public:
      * and it's state being equated to deltaExternal's output.
      */
     void commit(){
-        //cout << "Passing an input to [" << this->receiver->name << "] at [" << this->get_milli_seconds() << "]" << endl;
+        cout << "Passing an input"; input->println();  cout << "to [" << this->receiver->name << "] at [" << this->get_milli_seconds() << "]" << endl;
 
-        receiver->currentState = receiver->deltaExternal(receiver->currentState, input, get_milli_seconds());
+        receiver->setState(receiver->deltaExternal(receiver->currentState, input, get_milli_seconds()));
     }
 };
 
@@ -64,14 +66,14 @@ public:
         outPutter = _outPutter;
         receiver = _receiver;
         context = _context;
+        cout << receiver->name << endl;
     }
     void commit(){
 
         auto currState = outPutter->currentState;
         auto output = outPutter->lambda(currState, this->get_milli_seconds());
 
-
-        cout << outPutter->name << " outputted "; output->println(); cout << endl;
+        cout << outPutter->name << " outputted "; output->println(); cout << " TIME [" << get_milli_seconds() << "]"<< endl;
         Input_Event<RC, O> * input_event;
         input_event = new Input_Event<RC, O>(receiver, output, this->get_milli_seconds());
         context->insert(input_event);
@@ -79,6 +81,17 @@ public:
     }
 };
 
+class Lambda_Event : public Event {
+public :
+    Lambda_Event(int _ms, function<void()> event) : Event(_ms) {}
+
+    void commit(){
+        event();
+    }
+private :
+    function<void()> event;
+
+};
 
 class Log : public Event {
 public :
@@ -178,16 +191,18 @@ public:
  * S : State type.
  */
 template <typename I, typename O, typename S, typename SUB>
+
 class Model {
 public :
     Event_Queue * context;
     string name;
     int triggerTime;
     vector<SUB *> subscribed;
-    S currentState;
+    S * currentState;
     virtual S * deltaExternal(S * currentState, I * input, int insertionTime) = 0;
     virtual S * deltaInternal(S * currentState) = 0;
     virtual O * lambda(S * currentState, int peekTime) = 0;
+    virtual void setState(S * state) = 0;
 };
 
 /**
@@ -273,6 +288,8 @@ public :
     int triggerTime = 120;
     DrillState * currentState;
 
+    virtual void setState(DrillState *state);
+
     Drill(DrillState * _defaultState, Event_Queue * _context){
         name = "Drill";
         currentState = _defaultState;
@@ -344,6 +361,8 @@ class Press : public Model<MetalBall, MetalDisk, PressState, Drill> {
 public :
     int triggerTime = 120;
     PressState * currentState;
+
+    virtual void setState(PressState *state);
 
     Press(PressState * _defaultState, Event_Queue * _context){
         currentState = _defaultState;
@@ -445,6 +464,7 @@ public:
     }
 
     CellState * reduce(){
+        auto newState = new CellState();
         switch (selfValue) {
             case 0 : {
                 if(left == 1 && right == 1){
@@ -470,7 +490,7 @@ public:
                 else if(left == 0 && right == 1){
                     selfValue = 1;
                 } else {
-                    selfValue = 1;
+                    selfValue = 0;
                 }
                 break;
             }
@@ -493,6 +513,8 @@ public :
     CellState * currentState;
     BinaryRouter<Cell *, Cell *> * binaryRouter;
 
+    virtual void setState(CellState *state);
+
     bool tailer;
 
     Cell(CellState * _defaultState, Event_Queue * _context){
@@ -507,7 +529,7 @@ public :
 
     CellState * deltaInternal(CellState * currentState){
         auto newState = currentState->reduce();
-        return newState;
+        return currentState;
     }
 
     CellOutput * lambda(CellState * currentState, int peekTime){
@@ -547,50 +569,23 @@ void PartThree(){
     delete eq;
 }
 
-class Cell_Event_Queue : public Event_Queue {
-public :
-    int cell_count;
-    int stop_count = 15;
-    Cell_Event_Queue(int _cellCount) : cell_count(_cellCount){}
-    vector<Cell *> allCells;
-    void dump(){
-        while(!eventQueue.empty() && stop_count > 0){
-            //Get the top value
-            auto e = eventQueue.top();
-            e->commit();
-            eventQueue.pop();
-            delete e;
-            //Do a check here to see if this event should be allowed to commit or if a confluent join should occur.
-            if(cell_count == 30){
-                for(auto cell : allCells){
-                    cout << cell->currentState->selfValue;
-                }
-                cout << endl;
-                cell_count = 0;
-                stop_count--;
-                //getchar();
-            }
-        }
-    }
-};
-
 //Instructs a cell to update it's self value
 class Update_Event : public Event {
 public:
     Cell * shouterCell;
-    Cell_Event_Queue * context;
-    Update_Event(Cell * shouterCell, int _ms, Cell_Event_Queue * context) : Event(_ms), shouterCell(shouterCell) {
+    Event_Queue * context;
+    Update_Event(Cell * shouterCell, int _ms, Event_Queue * context) : Event(_ms), shouterCell(shouterCell) {
         this->context = context;
     }
     void commit(){
-        //cout << "Updating [" << shouterCell->name << "] at [" << get_milli_seconds() << "]" << endl;
+        cout << "Updating [" << shouterCell->name << "] at [" << get_milli_seconds() << "]" << endl;
         //Update the cell's state...and output the current output.
-        //cout << "Before update " << shouterCell->currentState->selfValue << " left: " << shouterCell->currentState->left << " right : " << shouterCell->currentState->right << endl;
         shouterCell->currentState = shouterCell->deltaInternal(shouterCell->currentState);
-        //cout << "After update " << shouterCell->currentState->selfValue << " left: " << shouterCell->currentState->left << " right : " << shouterCell->currentState->right << endl;
-        //cout << endl;
-        //getchar();
-        context->cell_count++;
+        if(shouterCell->tailer){
+            cout << shouterCell->lambda(shouterCell->currentState, get_milli_seconds())->value << endl;
+        } else {
+            cout << shouterCell->lambda(shouterCell->currentState, get_milli_seconds())->value;
+        }
     }
 };
 
@@ -599,14 +594,13 @@ class Wake_Event : public Event {
 public:
     Input_Event<Cell, CellInput> * buildFrom;
     Cell * snoozingCell;
-    Cell_Event_Queue * context;
-
-    Wake_Event(Cell * snoozingCell, int _ms, Cell_Event_Queue * context) : Event(_ms), buildFrom(buildFrom), snoozingCell(snoozingCell) {
+    Event_Queue * context;
+    Wake_Event(Cell * snoozingCell, int _ms, Event_Queue * context) : Event(_ms), buildFrom(buildFrom), snoozingCell(snoozingCell) {
         this->context = context;
     }
 
     void commit(){
-        //cout << "Waking [" << snoozingCell->name << "] at [" << get_milli_seconds() << "]" << endl;
+        cout << "Waking [" << snoozingCell->name << "] at [" << get_milli_seconds() << "]" << endl;
 
         int left = snoozingCell->binaryRouter->leftContact->currentState->selfValue;
         int right = snoozingCell->binaryRouter->rightContact->currentState->selfValue;
@@ -616,95 +610,465 @@ public:
 
         context->insert(e);
 
-        int rightWakeTime = snoozingCell->tailer ? get_milli_seconds() + 15 : get_milli_seconds();
+        int rightWakeTime = snoozingCell->tailer ? get_milli_seconds() + 1 : get_milli_seconds();
+        cout << "[" <<snoozingCell->name << "]";
         auto rightWake = new Wake_Event(snoozingCell->binaryRouter->rightContact, rightWakeTime, context);
         context->insert(rightWake);
 
-        auto update_event = new Update_Event(snoozingCell, get_milli_seconds() + 10, context);
+        auto update_event = new Update_Event(snoozingCell, get_milli_seconds() + 1, context);
         context->insert(update_event);
-        //getchar();
+        getchar();
+    }
+
+};
+void PartTwo(){
+    auto eq = new Event_Queue();
+
+    CellState * defaultState = new CellState(1);
+
+    Cell * cellOne = new Cell(defaultState, eq);
+    Cell * cellTwo = new Cell(new CellState(0), eq);
+    Cell * cellThree = new Cell(new CellState(0), eq);
+
+    cellThree->tailer = false;
+    cellOne->tailer = true;
+    cellOne->tailer = true;
+
+    auto routeOne = new BinaryRouter<Cell *, Cell *>(cellThree, cellTwo);
+    auto routeTwo = new BinaryRouter<Cell *, Cell *>(cellOne, cellThree);
+    auto routeThree = new BinaryRouter<Cell *, Cell *>(cellTwo, cellOne);
+
+    cellOne->binaryRouter = routeOne;
+    cellTwo->binaryRouter = routeTwo;
+    cellThree->binaryRouter = routeThree;
+
+    cellOne->name = "Cell One";
+    cellTwo->name = "Cell Two";
+    cellThree->name = "Cell Three";
+
+
+    //Input event is a wake event
+    auto e = new Wake_Event(cellOne, 0, eq);
+
+    eq->insert(e);
+
+    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
+    eq->dump();
+    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
+
+}
+
+class XorToken : public Token<xorIdentifier > {
+public:
+    xorIdentifier identifier;
+    bool value;
+    XorToken(int _readyTime, xorIdentifier _identity, bool identity = false) : Token(_readyTime), value(identity), identifier(_identity) {
+        switch(_identity){
+            case True : {
+                print = "[T]";
+                value = true;
+                break;
+            }
+            case False : {
+                print = "[F]";
+                value = false;
+                break;
+            }
+            default : {
+                throw 99;
+            }
+        }
+    }
+    void println(){
+        cout << print;
+    }
+
+private:
+    string print;
+};
+
+class XorTokenBag: public Token<xorIdentifier>{
+public:
+    vector<XorToken *> xorTokens;
+    XorTokenBag(int _readyTime, vector<XorToken *> & xorTokens) : Token(_readyTime) {
+        int count = 0;
+        for(auto& token : xorTokens){
+            switch(token->identifier){
+                case True : {
+                    count++;
+                    break;
+                }
+                case False :
+                default: break;
+            }
+        }
+        identifier = (count % 2 == 0) ? False : True;
+        this->xorTokens = xorTokens;
+    }
+    XorToken * result(int readyTime){
+        return identifier == False ? new XorToken(readyTime, False) : new XorToken(readyTime, True);
+    }
+    void println(){
+        for(auto token : xorTokens){
+            token->println();
+        }
+    }
+};
+
+class XorState : public State<XorTokenBag, XorToken> {
+public:
+    XorState(){};
+    xorIdentifier value;
+    XorState(xorIdentifier _value) : value(_value){}
+    //Make this a priority queue of drill press parts.
+    //Called delta internal : assumes output can be created.
+    XorState * reduce(){
+        this->value = False;
+        return this;
+    }
+
+    XorState * join(XorTokenBag * incomingInput){
+        this->value = incomingInput->identifier;
+        return this;
+    }
+};
+
+class XorModel : public Model<XorTokenBag, XorToken, XorState, XorModel> {
+public:
+    Event_Queue * context;
+    string name;
+    int triggerTime = 10;
+    XorState * currentState;
+
+    virtual void setState(XorState *state);
+
+public:
+    XorModel(string name, XorState * defaultState, Event_Queue * _context){
+        currentState = defaultState;
+        this->name = name;
+        context = _context;
+        subscribed = vector<XorModel*>();
+    }
+
+    XorModel(string name, Event_Queue * _context){
+        auto state = new XorState(False);
+        currentState = state;
+        this->name = name;
+        context = _context;
+    }
+
+    XorState * deltaExternal(XorState * currentState, XorTokenBag * input, int insertionTime){
+        cout << name << "DELTA EXT CALL" << endl;
+        input->readyTime = insertionTime;
+
+        auto receiver = subscribed[0];
+        int outPutTime = insertionTime + triggerTime;
+
+        //TODO
+        function<void()> event = [](){
+            auto defaultMem = queue<XorToken *>();
+
+            auto inOne = new XorToken(-1, True);
+            auto inTwo = new XorToken(-1, False);
+
+            defaultMem.push(inOne);
+            defaultMem.push(inTwo);
+            cout << "3" << endl;
+
+            MemoryState * memState = new MemoryState(defaultMem);
+            cout << "4" << endl;
+
+            auto memoryModel = new MemoryModule("Memory Module", new Event_Queue(), memState);
+        };
+
+        cout << name << "DELTA EXT RETURN" << endl;
+        return currentState->join(input);
+    }
+
+    XorState * deltaInternal(XorState * currentState){
+        return currentState->reduce();
+    }
+
+    XorToken * lambda(XorState * currentState, int peekTime){
+        xorIdentifier id = currentState->value;
+        return new XorToken(peekTime, id);
+    }
+};
+
+class RouteState : public State<XorTokenBag, XorTokenBag> {
+public:
+    RouteState(XorModel *innerModel, const vector<int> &toInner, const vector<int> &toByPass)
+            : innerModel(innerModel), toInner(toInner), toByPass(toByPass)
+    {
+        vector<XorToken *> x;
+        this->value = new XorTokenBag(0, x);
+    }
+
+    XorModel * innerModel;
+
+    vector<int> toInner;
+    vector<int> toByPass;
+
+    XorTokenBag * value;
+
+    RouteState * reduce(){
+        //Reduce the model's state and this one.
+        auto state = innerModel->currentState;
+        innerModel->deltaInternal(state);
+        return this;
+    }
+
+    //Must be of size 3
+    RouteState * join(XorTokenBag * incomingInput){
+        int ready = incomingInput->readyTime;
+        vector<XorToken *> input = incomingInput->xorTokens;
+        vector<XorToken *> inserted = vector<XorToken *>();
+        vector<XorToken *> byPass = vector<XorToken *>();
+
+        for(int i : toInner){
+            inserted.push_back(input[i]);
+        }
+
+        for(int j : toByPass){
+            byPass.push_back(input[j]);
+        }
+
+
+        //By pass the counting and just insert the token into the model.
+        innerModel->currentState = innerModel->currentState->join(new XorTokenBag(0, inserted));
+
+        auto innerout = innerModel->lambda(innerModel->currentState, 0);
+        byPass.push_back(innerout);
+        value = new XorTokenBag(0, byPass);
+        //Create output event for this model now.
+        return this;
+    }
+};
+
+class PassThroughRouter : public Model<XorTokenBag, XorTokenBag, RouteState, XorModel> {
+public:
+    Event_Queue * context;
+
+    string name = "Router";
+    int triggerTime = 10;
+
+    virtual void setState(RouteState *state);
+
+    vector<XorModel *> subscribed = vector<XorModel *>();
+
+    RouteState * currentState;
+
+    PassThroughRouter(RouteState * defaultState, Event_Queue * _context){
+        this->context = _context;
+        currentState = defaultState;
+    }
+
+    RouteState * deltaExternal(RouteState * currentState, XorTokenBag * input, int insertionTime){
+        input->readyTime = insertionTime;
+
+        int outputTime = insertionTime + triggerTime;
+        auto receiver = subscribed[0];
+
+        auto outputEvent = new Output_Event<PassThroughRouter, XorTokenBag, XorModel>(this, receiver, outputTime, context);
+        cout << name << " SUBS [" << subscribed[0]->name << "]" << endl;
+        cout << "\nOE at [" << outputTime << "]" << endl;
+        cout << " IS "; input->println(); cout << endl;
+
+        context->insert(outputEvent);
+        return currentState->join(input);
+    };
+
+    RouteState * deltaInternal(RouteState * currentState){
+        return currentState->reduce();
+    }
+
+    XorTokenBag * lambda(RouteState * currentState, int peekTime){
+        auto input = currentState->value;
+        input->readyTime = peekTime;
+        return input;
     }
 
 };
 
+class MemoryState : public State<XorToken, XorToken> {
+public :
+    queue<XorToken *> state = queue<XorToken *>();
 
-void PartTwo(){
-    auto eq = new Cell_Event_Queue(0);
+    MemoryState(queue<XorToken *> &state) : state(state) { }
 
-//    CellState * defaultState = new CellState(0);
-//
-//    Cell * cellOne = new Cell(defaultState, eq);
-//    Cell * cellTwo = new Cell(new CellState(0), eq);
-//    Cell * cellThree = new Cell(new CellState(0), eq);
-//
-//    cellThree->tailer = true;
-//    cellTwo->tailer = false;
-//    cellOne->tailer = false;
-//
-//    auto routeOne = new BinaryRouter<Cell *, Cell *>(cellThree, cellTwo);
-//    auto routeTwo = new BinaryRouter<Cell *, Cell *>(cellOne, cellThree);
-//    auto routeThree = new BinaryRouter<Cell *, Cell *>(cellTwo, cellOne);
-//
-//    cellOne->binaryRouter = routeOne;
-//    cellTwo->binaryRouter = routeTwo;
-//    cellThree->binaryRouter = routeThree;
-//
-//    cellOne->name = "Cell One";
-//    cellTwo->name = "Cell Two";
-//    cellThree->name = "Cell Three";
+    MemoryState * join(XorToken * input){
+        state.push(input);
+        return this;
+    }
+    MemoryState * reduce(){
+        state.pop();
+        return this;
+    }
+};
 
-    vector<Cell *> allCells = vector<Cell *>();
+class MemoryModule : public Model<XorToken, XorToken, MemoryState, PassThroughRouter>, public XorModel {
+public :
+    Event_Queue * context;
 
+    virtual void setState(MemoryState *state);
 
-    for(auto i : range<int>(0, 30)){
-        cout << i << endl;
-        allCells.push_back(new Cell(new CellState(0), eq));
+    string name = "MEM MODULE";
+
+    int triggerTime = 10;
+
+    vector<PassThroughRouter *> subscribed = vector<PassThroughRouter *>();
+    MemoryState * currentState;
+
+    MemoryModule(string name, Event_Queue * context, MemoryState * _currentState) : XorModel(name, context){
+        this->currentState = _currentState;
+        this->context = context;
     }
 
-    allCells[17]->currentState->selfValue = 1;
+    virtual void setState(XorState *state);
 
-    for(auto i : range<int>(0, 30)){
-        auto currentCell = allCells[i];
-        currentCell->tailer = false;
-
-        if(i != 0 && i != 29) {
-            auto leftCell = allCells[i - 1];
-            auto rightCell = allCells[i + 1];
-            auto router = new BinaryRouter<Cell *, Cell *>(leftCell, rightCell);
-            currentCell->binaryRouter = router;
-        }
-        else if(i == 0){
-            auto leftCell = allCells[29];
-            auto rightCell = allCells[i + 1];
-            auto router = new BinaryRouter<Cell *, Cell *>(leftCell, rightCell);
-            currentCell->binaryRouter = router;
-        } else {
-            auto leftCell = allCells[28];
-            auto rightCell = allCells[0];
-            auto router = new BinaryRouter<Cell *, Cell *>(leftCell, rightCell);
-            currentCell->binaryRouter = router;
-            currentCell->tailer = true;
-        }
-
-        currentCell->currentState->left = currentCell->binaryRouter->leftContact->currentState->selfValue;
-        currentCell->currentState->right = currentCell->binaryRouter->rightContact->currentState->selfValue;
-
+    MemoryState * deltaExternal(MemoryState * currentState, XorToken * input, int insertionTime){
+        return this->currentState->join(input);
     }
 
-    eq->allCells = allCells;
+    MemoryState * deltaInternal(MemoryState * currentState){
+        return this->currentState->reduce();
+    }
 
-    //Input event is a wake event
-    auto e = new Wake_Event(allCells[0], 0, eq);
+    XorToken * lambda(MemoryState * currentState, int peekTime){
+        return this->currentState->state.front();
+    }
+};
 
-    eq->insert(e);
-//
-//    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
+/**
+ * Launch event.
+ */
+class KickOffEvent : public Event {
+public:
+    MemoryModule * memoryModule;
+    Event_Queue * context;
+    KickOffEvent(int _ms, MemoryModule * _memoryModule, Event_Queue * _context) : Event(_ms) {
+        this->context = _context;
+        this->memoryModule = _memoryModule;
+    }
+
+    void commit(){
+        int inputOne;
+        int inputTwo;
+
+        cout << "Enter input one" << endl;
+        cin >> inputOne;
+
+        cout << "Enter input two" << endl;
+        cin >> inputTwo;
+
+        XorToken * tokenOne = inputOne == 0 ? new XorToken(get_milli_seconds(), False, false) : new XorToken(get_milli_seconds(), True, true) ;
+        XorToken * tokenTwo = inputTwo == 0 ? new XorToken(get_milli_seconds(), False, false) : new XorToken(get_milli_seconds(), True, true) ;
+        XorToken * tokenThree = memoryModule->lambda(memoryModule->currentState, -1);
+
+        vector<XorToken *> inputs;
+        inputs.push_back(tokenOne);
+        inputs.push_back(tokenTwo);
+        inputs.push_back(tokenThree);
+
+        //tokenOne->println();tokenTwo->println();tokenThree->println();
+
+        for(auto& i : inputs){
+            i->println() ; cout << endl;
+        }
+
+        auto insert = new XorTokenBag(0, inputs);
+        auto targetModel = memoryModule->subscribed[0];
+
+        int nextTime = get_milli_seconds();
+
+        auto inEvent = new Input_Event<PassThroughRouter, XorTokenBag>(targetModel, insert, nextTime);
+
+        cout << "\nIE at [" << nextTime << "]" << endl;
+
+        context->insert(inEvent);
+    }
+};
+
+void PartOne(){
+    auto eq = new Event_Queue();
+
+    auto xorOneState = new XorState(False);
+    auto xorTwoState = new XorState(False);
+
+    auto innerModel = new XorModel("XOR Inner", xorOneState, eq);
+    cout << "1" << endl;
+
+    auto toInner = vector<int>{0,1};
+    auto toOuter = vector<int>{2};
+    cout << "2" << endl;
+
+    auto routeState = new RouteState(innerModel, toInner, toOuter);
+    cout << "2" << endl;
+
+    auto xorOne = new PassThroughRouter(routeState, eq);
+
+    auto xorTwo = new XorModel("XOR 2", xorTwoState, eq);
+
+    xorOne->subscribed.push_back(xorTwo);
+
+    auto defaultMem = queue<XorToken *>();
+
+    auto inOne = new XorToken(-1, True);
+    auto inTwo = new XorToken(-1, False);
+
+    defaultMem.push(inOne);
+    defaultMem.push(inTwo);
+    cout << "3" << endl;
+
+    auto memState = new MemoryState(defaultMem);
+    cout << "4" << endl;
+
+    auto memoryModel = new MemoryModule("Memory Module", eq, memState);
+
+    cout << "5" << endl;
+    memoryModel->subscribed.push_back(xorOne);
+    xorTwo->subscribed.push_back(memoryModel);
+    cout << "6" << endl;
+    auto kickOff = new KickOffEvent(0, memoryModel, eq);
+
+    eq->insert(kickOff);
+
     eq->dump();
-//    cout << "Left value : " << cellOne->currentState->left << "\nRight value : " << cellOne->currentState->right << endl;
-
 }
+
 int main()
 {
-    PartTwo();
+    PartOne();
     return 0;
+}
+
+void MemoryModule::setState(MemoryState *state) {
+    this->currentState = state;
+}
+
+void Drill::setState(DrillState * state) {
+    this->currentState = state;
+}
+
+void Press::setState(PressState *state) {
+    this->currentState = state;
+
+}
+
+void Cell::setState(CellState *state) {
+    this->currentState = state;
+
+}
+
+void XorModel::setState(XorState *state) {
+    this->currentState = state;
+
+}
+
+void PassThroughRouter::setState(RouteState *state) {
+    this->currentState = state;
+
+}
+
+void MemoryModule::setState(XorState * state) {
 }
