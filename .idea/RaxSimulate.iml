@@ -2,13 +2,42 @@
 <module type="CPP_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/BinaryRouter.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Event.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Event.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Event_Queue.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Event_Queue.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Input_Event.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/KickOffEvent.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/KickOffEvent.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Log.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Log.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Main.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/MemoryModule.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/MemoryModule.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/MemoryState.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/MemoryState.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Model.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Model.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/OutPut_Event.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/PartTwo.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Part_Three.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/PassThroughRouter.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/PassThroughRouter.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Processable_Token.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/RouteState.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/RouteState.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/State.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Token.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorModel.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorModel.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorState.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorState.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorToken.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorToken.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorTokenBag.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/XorTokenBag.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/range.hpp" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
