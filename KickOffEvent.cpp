@@ -9,6 +9,8 @@ KickOffEvent::KickOffEvent(int _ms, MemoryModule * _memoryModule, Event_Queue * 
     this->memoryModule = _memoryModule;
 }
 
+
+
 void KickOffEvent::commit(){
     int inputOne;
     int inputTwo;
@@ -16,11 +18,17 @@ void KickOffEvent::commit(){
     cout << "Enter input one" << endl;
     cin >> inputOne;
 
+
     cout << "Enter input two" << endl;
     cin >> inputTwo;
 
+    if(inputOne == -1 || inputTwo == -1){
+        return;
+    }
+
     XorToken * tokenOne = inputOne == 0 ? new XorToken(get_milli_seconds(), False, false) : new XorToken(get_milli_seconds(), True, true) ;
     XorToken * tokenTwo = inputTwo == 0 ? new XorToken(get_milli_seconds(), False, false) : new XorToken(get_milli_seconds(), True, true) ;
+
     XorToken * tokenThree = memoryModule->lambda(memoryModule->currentState, -1);
 
     vector<XorToken *> inputs;

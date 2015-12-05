@@ -18,7 +18,9 @@ public:
     //Make this a priority queue of drill press parts.
     //Called delta internal : assumes output can be created.
     XorState * reduce();
-
+    ~XorState(){
+        cout << "State Deleted" << endl;
+    }
     XorState * join(XorTokenBag * incomingInput);
 };
 

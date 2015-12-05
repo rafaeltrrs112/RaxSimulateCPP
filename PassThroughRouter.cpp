@@ -33,3 +33,6 @@ XorTokenBag * PassThroughRouter::lambda(RouteState * currentState, int peekTime)
     return input;
 }
 
+PassThroughRouter::~PassThroughRouter() {
+    delete currentState;
+}

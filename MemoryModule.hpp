@@ -28,6 +28,8 @@ public :
 
     MemoryModule(string name, Event_Queue * context, MemoryState * _currentState) ;
 
+    ~MemoryModule();
+
     MemoryState * deltaExternal(MemoryState * currentState, XorToken * input, int insertionTime);
 
     MemoryState * deltaInternal(MemoryState * currentState);

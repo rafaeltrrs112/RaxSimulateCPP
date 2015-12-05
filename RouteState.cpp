@@ -19,10 +19,10 @@ RouteState * RouteState::reduce(){
 
 //Must be of size 3
 RouteState * RouteState::join(XorTokenBag * incomingInput){
-    int ready = incomingInput->readyTime;
     vector<XorToken *> input = incomingInput->xorTokens;
     vector<XorToken *> inserted = vector<XorToken *>();
     vector<XorToken *> byPass = vector<XorToken *>();
+    delete incomingInput;
 
     for(int i : toInner){
         inserted.push_back(input[i]);

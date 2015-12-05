@@ -21,6 +21,7 @@
       <sourceFolder url="file://$MODULE_DIR$/Model.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Model.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/OutPut_Event.hpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/PartOne.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/PartTwo.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Part_Three.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/PassThroughRouter.cpp" isTestSource="false" />
@@ -39,6 +40,7 @@
       <sourceFolder url="file://$MODULE_DIR$/XorTokenBag.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/XorTokenBag.hpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/range.hpp" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/out" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

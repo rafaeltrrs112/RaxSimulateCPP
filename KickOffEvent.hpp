@@ -13,7 +13,9 @@ public:
     MemoryModule * memoryModule;
     Event_Queue * context;
     KickOffEvent(int _ms, MemoryModule * _memoryModule, Event_Queue * _context);
-
+    ~KickOffEvent(){
+        delete memoryModule;
+    }
     void commit();
 };
 

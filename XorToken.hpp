@@ -10,7 +10,7 @@ enum xorIdentifier {False, True};
 #include <iostream>
 #include "Token.hpp"
 
-class XorToken : public Token<xorIdentifier > {
+class XorToken : public Token<xorIdentifier> {
 public:
     xorIdentifier identifier;
     bool value;

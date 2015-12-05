@@ -30,3 +30,6 @@ XorToken * MemoryModule::lambda(MemoryState * currentState, int peekTime){
     return this->currentState->state.front();
 }
 
+MemoryModule::~MemoryModule(){
+    delete currentState;
+}

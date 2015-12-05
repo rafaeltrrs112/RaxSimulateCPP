@@ -50,4 +50,3 @@ XorToken * XorModel::lambda(XorState * currentState, int peekTime){
     xorIdentifier id = currentState->value;
     return new XorToken(peekTime, id);
 }
-

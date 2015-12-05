@@ -14,7 +14,6 @@ class Output_Event : public Event {
 public:
     OP * outPutter;
     RC * receiver;
-    O * output;
     Event_Queue * context;
 
     Output_Event(OP * _outPutter, RC * _receiver, int _ms, Event_Queue * _context) : Event(_ms){

@@ -32,6 +32,8 @@ public:
     void setState(RouteState * state){
         this->currentState = state;
     }
+
+    ~PassThroughRouter();
 };
 
 

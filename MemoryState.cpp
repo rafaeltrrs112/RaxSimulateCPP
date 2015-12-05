@@ -11,7 +11,9 @@ MemoryState * MemoryState::join(XorToken * input){
     return this;
 }
 MemoryState * MemoryState::reduce(){
+    auto cur = state.front();
     state.pop();
+    delete cur;
     return this;
 }
 

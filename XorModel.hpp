@@ -25,7 +25,9 @@ public:
     XorModel(string name, XorState * defaultState, Event_Queue * _context);
 
     XorModel(string name, Event_Queue * _context);
-
+    ~XorModel(){
+        delete currentState;
+    }
     XorState * deltaExternal(XorState * currentState, XorTokenBag * input, int insertionTime);
 
     XorState * deltaInternal(XorState * currentState);

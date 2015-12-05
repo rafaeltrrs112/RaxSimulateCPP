@@ -14,6 +14,12 @@ public:
     XorTokenBag(int _readyTime, vector<XorToken *> & xorTokens);
     XorToken * result(int readyTime);
     void println();
+//    ~XorTokenBag(){
+//        for(auto& input : xorTokens){
+//            cout << "deleting" << endl;
+//            delete input;
+//        }
+//    }
 };
 
 
